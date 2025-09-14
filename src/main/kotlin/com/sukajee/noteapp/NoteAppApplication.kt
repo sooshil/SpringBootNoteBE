@@ -5,7 +5,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
 import org.springframework.boot.runApplication
 
-@EnableAutoConfiguration(exclude = [MongoAutoConfiguration::class])
 @SpringBootApplication
 class NoteAppApplication
 
