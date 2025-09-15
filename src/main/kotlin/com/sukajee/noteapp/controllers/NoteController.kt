@@ -3,6 +3,7 @@ package com.sukajee.noteapp.controllers
 import com.sukajee.noteapp.controllers.NoteController.NoteResponse
 import com.sukajee.noteapp.database.model.Note
 import com.sukajee.noteapp.database.repository.NoteRepository
+import jakarta.validation.constraints.NotBlank
 import org.bson.types.ObjectId
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
@@ -16,6 +17,7 @@ class NoteController(
 	
 	data class NoteRequest(
 		val id: String?,
+		@NotBlank(message = "Title cannot be blank")
 		val title: String,
 		val content: String,
 		val color: Long
