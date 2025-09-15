@@ -5,9 +5,11 @@ import com.sukajee.noteapp.database.model.User
 import com.sukajee.noteapp.database.repository.RefreshTokenRepository
 import com.sukajee.noteapp.database.repository.UserRepository
 import org.bson.types.ObjectId
+import org.springframework.http.HttpStatusCode
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.server.ResponseStatusException
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.*
@@ -22,7 +24,7 @@ class AuthService(
 	private val hashEncoder: HashEncoder,
 	private val refreshTokenRepository: RefreshTokenRepository
 ) {
-
+	
 	/**
 	 * Data class to hold a pair of access and refresh tokens.
 	 */
@@ -30,7 +32,7 @@ class AuthService(
 		val accessToken: String,
 		val refreshToken: String
 	)
-
+	
 	/**
 	 * Registers a new user with the provided email and password.
 	 *
@@ -49,7 +51,7 @@ class AuthService(
 			)
 		)
 	}
-
+	
 	/**
 	 * Authenticates a user with the provided email and password.
 	 *
@@ -68,18 +70,18 @@ class AuthService(
 		}
 		val newAccessToken = jwtService.generateAccessToken(user.id.toHexString())
 		val newRefreshToken = jwtService.generateRefreshToken(user.id.toHexString())
-
+		
 		storeRefreshToken(
 			userId = user.id,
 			rawRefreshToken = newRefreshToken
 		)
-
+		
 		return TokenPair(
 			accessToken = newAccessToken,
 			refreshToken = newRefreshToken
 		)
 	}
-
+	
 	/**
 	 * Refreshes the access token using the provided refresh token.
 	 *
@@ -89,31 +91,39 @@ class AuthService(
 	 */
 	@Transactional
 	fun refresh(refreshToken: String): TokenPair {
-		val exception = IllegalArgumentException("Invalid refresh token.")
 		if (!jwtService.validateRefreshToken(refreshToken)) {
-			throw exception
+			throw ResponseStatusException(
+				HttpStatusCode.valueOf(401),
+				"Invalid refresh token."
+			)
 		}
 		val userId = jwtService.getUserIdFromToken(refreshToken)
 		val user = userRepository.findById(ObjectId(userId)).orElseThrow {
-			exception
+			ResponseStatusException(
+				HttpStatusCode.valueOf(401),
+				"Invalid refresh token."
+			)
 		}
 		val hashed = hashToken(refreshToken)
 		refreshTokenRepository.findByUserIdAndHashedToken(
 			userId = user.id,
 			hashedToken = hashed
-		) ?: throw IllegalArgumentException("Refresh token not recognized (may be used or expired.")
-		refreshTokenRepository.deleteByUserIdAndHashedToken(user.id, refreshToken)
-
+		) ?: throw ResponseStatusException(
+			HttpStatusCode.valueOf(401),
+			"Refresh token not recognized (may be used or expired.)"
+		)
+		refreshTokenRepository.deleteByUserIdAndHashedToken(user.id, hashed)
+		
 		val newAccessToken = jwtService.generateAccessToken(userId)
 		val newRefreshToken = jwtService.generateRefreshToken(userId)
-
+		
 		storeRefreshToken(user.id, newRefreshToken)
 		return TokenPair(
 			accessToken = newAccessToken,
 			refreshToken = newRefreshToken
 		)
 	}
-
+	
 	/**
 	 * Stores a refresh token in the repository after hashing it and setting its expiration time.
 	 *
@@ -124,7 +134,7 @@ class AuthService(
 		val hashed = hashToken(rawRefreshToken)
 		val expiryMs = jwtService.refreshTokenValidityMs
 		val expiresAt = Instant.now().plusMillis(expiryMs)
-
+		
 		refreshTokenRepository.save(
 			RefreshToken(
 				userId = userId,
@@ -133,7 +143,7 @@ class AuthService(
 			)
 		)
 	}
-
+	
 	/**
 	 * Hashes the provided token using SHA-256 and encodes it to Base64.
 	 *

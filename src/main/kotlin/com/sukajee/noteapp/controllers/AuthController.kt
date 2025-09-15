@@ -3,9 +3,11 @@ package com.sukajee.noteapp.controllers
 import com.sukajee.noteapp.security.AuthService
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@RestController("/auth")
+@RestController
+@RequestMapping("/auth")
 class AuthController(
 	private val authService: AuthService
 ) {

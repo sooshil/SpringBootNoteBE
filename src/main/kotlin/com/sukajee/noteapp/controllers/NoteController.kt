@@ -4,6 +4,7 @@ import com.sukajee.noteapp.controllers.NoteController.NoteResponse
 import com.sukajee.noteapp.database.model.Note
 import com.sukajee.noteapp.database.repository.NoteRepository
 import org.bson.types.ObjectId
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
@@ -33,10 +34,14 @@ class NoteController(
 	fun save(
 		@RequestBody body: NoteRequest
 	): NoteResponse {
+		val ownerId = SecurityContextHolder
+			.getContext()
+			.authentication
+			.principal as? String
 		val note = repository.save(
 			Note(
 				id = body.id?.let { ObjectId(it) } ?: ObjectId.get(),
-				ownerId = ObjectId.get(),
+				ownerId = ObjectId(ownerId),
 				title = body.title,
 				content = body.content,
 				color = body.color,
@@ -48,9 +53,11 @@ class NoteController(
 	
 	// GET http://localhost:8080/notes?ownerId=5f7d7d5d0d8d0d0001c7d5d0
 	@GetMapping
-	fun findByOwnerId(
-		@RequestParam(required = true) ownerId: String
-	): List<NoteResponse> {
+	fun findByOwnerId(): List<NoteResponse> {
+		val ownerId = SecurityContextHolder
+			.getContext()
+			.authentication
+			.principal as? String
 		return repository.findByOwnerId(ObjectId(ownerId)).map {
 			it.toResponse()
 		}
@@ -59,7 +66,16 @@ class NoteController(
 	// DELETE http://localhost:8080/notes/5f7d7d5d0d8d0d0001c7d5d0
 	@DeleteMapping(path = ["/{id}"])
 	fun deleteById(@PathVariable id: String) {
-		repository.deleteById(ObjectId(id))
+		val note = repository
+			.findById(ObjectId(id))
+			.orElseThrow { IllegalArgumentException("Note not found") }
+		val ownerId = SecurityContextHolder
+			.getContext()
+			.authentication
+			.principal as? String
+		if (note.ownerId.toHexString() == ownerId) {
+			repository.deleteById(ObjectId(id))
+		}
 	}
 }
 
