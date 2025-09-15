@@ -54,6 +54,7 @@ class NoteController(
 	}
 	
 	// GET http://localhost:8080/notes?ownerId=5f7d7d5d0d8d0d0001c7d5d0
+	// but owner id will be passed from logged-in user's id
 	@GetMapping
 	fun findByOwnerId(): List<NoteResponse> {
 		val ownerId = SecurityContextHolder
