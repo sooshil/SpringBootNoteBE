@@ -3,6 +3,7 @@ package com.sukajee.noteapp.controllers
 import com.sukajee.noteapp.controllers.NoteController.NoteResponse
 import com.sukajee.noteapp.database.model.Note
 import com.sukajee.noteapp.database.repository.NoteRepository
+import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import org.bson.types.ObjectId
 import org.springframework.security.core.context.SecurityContextHolder
@@ -17,7 +18,7 @@ class NoteController(
 	
 	data class NoteRequest(
 		val id: String?,
-		@NotBlank(message = "Title cannot be blank")
+		@field:NotBlank(message = "Title cannot be blank")
 		val title: String,
 		val content: String,
 		val color: Long
@@ -34,7 +35,7 @@ class NoteController(
 	// POST http://localhost:8080/notes
 	@PostMapping
 	fun save(
-		@RequestBody body: NoteRequest
+		@Valid @RequestBody body: NoteRequest
 	): NoteResponse {
 		val ownerId = SecurityContextHolder
 			.getContext()

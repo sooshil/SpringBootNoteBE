@@ -1,6 +1,7 @@
 package com.sukajee.noteapp.controllers
 
 import com.sukajee.noteapp.security.AuthService
+import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.Pattern
 import org.springframework.web.bind.annotation.PostMapping
@@ -17,7 +18,7 @@ class AuthController(
 		@field:Email(message = "Invalid email format")
 		val email: String,
 		@field:Pattern(
-			regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,}$",
+			regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#\$%^&*])[a-zA-Z\\d!@#\$%^&*]{8,}\$",
 			message = "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number")
 		val password: String
 	)
@@ -28,7 +29,9 @@ class AuthController(
 	
 	@PostMapping("/register")
 	fun register(
-		@RequestBody body: AuthRequest
+		@Valid
+		@RequestBody
+		body: AuthRequest
 	) {
 		authService.register(body.email, body.password)
 	}
